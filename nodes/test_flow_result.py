@@ -1,3 +1,5 @@
+from nodes.flow_result import flow_result
+
+
 def test_flow_result_imports():
-    import nodes.flow_result as m
-    assert hasattr(m, "flow_result")
+    assert callable(flow_result)

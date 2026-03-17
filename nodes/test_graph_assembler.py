@@ -1,3 +1,5 @@
+from nodes.graph_assembler import graph_assembler
+
+
 def test_graph_assembler_imports():
-    import nodes.graph_assembler as m
-    assert hasattr(m, "graph_assembler")
+    assert callable(graph_assembler)

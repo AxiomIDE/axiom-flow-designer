@@ -1,3 +1,5 @@
+from nodes.node_resolver import node_resolver
+
+
 def test_node_resolver_imports():
-    import nodes.node_resolver as m
-    assert hasattr(m, "node_resolver")
+    assert callable(node_resolver)

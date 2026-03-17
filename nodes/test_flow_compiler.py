@@ -1,3 +1,5 @@
+from nodes.flow_compiler import flow_compiler
+
+
 def test_flow_compiler_imports():
-    import nodes.flow_compiler as m
-    assert hasattr(m, "flow_compiler")
+    assert callable(flow_compiler)
