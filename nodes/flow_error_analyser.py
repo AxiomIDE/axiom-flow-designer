@@ -4,7 +4,7 @@ import os
 import httpx
 import anthropic
 
-from gen.axiom_official_axiom_agent_messages_messages_pb2 import TestResult, AnalysisResult
+from gen.axiom_official_axiom_agent_messages_messages_pb2 import FlowBuildContext
 from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
 
@@ -13,9 +13,11 @@ Analyse the test failure and debug events to identify graph topology errors, ada
 Produce specific fix instructions for the GraphAssembler."""
 
 
-def flow_error_analyser(log: AxiomLogger, secrets: AxiomSecrets, input: TestResult) -> AnalysisResult:
-    if input.success:
-        return AnalysisResult(has_error=False, error_summary="Flow test passed")
+def flow_error_analyser(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildContext) -> FlowBuildContext:
+    if input.test_success:
+        input.has_error = False
+        input.error_summary = "Flow test passed"
+        return input
 
     api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
 
@@ -33,7 +35,7 @@ def flow_error_analyser(log: AxiomLogger, secrets: AxiomSecrets, input: TestResu
             if resp.status_code == 200:
                 debug_events_text = json.dumps(resp.json(), indent=2)[:3000]
         except Exception as e:
-            log.warning(f"Failed to fetch debug events: {e}")
+            log.warn(f"Failed to fetch debug events: {e}")
 
     client = anthropic.Anthropic(api_key=api_key)
     message = client.messages.create(
@@ -43,7 +45,7 @@ def flow_error_analyser(log: AxiomLogger, secrets: AxiomSecrets, input: TestResu
         messages=[{
             "role": "user",
             "content": f"""Flow test failed:
-{input.error}
+{input.test_error}
 
 Debug events:
 {debug_events_text or "(none available)"}
@@ -52,9 +54,9 @@ What changes to the graph topology or edge adapters would fix this?"""
         }]
     )
 
-    return AnalysisResult(
-        has_error=True,
-        fix_instructions=message.content[0].text,
-        error_summary=input.error[:200] if input.error else "Unknown error",
-        iteration=1,
-    )
+    input.has_error = True
+    input.fix_instructions = message.content[0].text
+    input.error_summary = (input.test_error or "Unknown error")[:200]
+    input.iteration = input.iteration + 1
+
+    return input

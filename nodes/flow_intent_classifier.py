@@ -2,15 +2,15 @@ import json
 import os
 import anthropic
 
-from gen.axiom_official_axiom_agent_messages_messages_pb2 import AgentRequest, FlowSpec
+from gen.axiom_official_axiom_agent_messages_messages_pb2 import AgentRequest, FlowBuildContext
 from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
 
 SYSTEM_PROMPT = """You are an expert Axiom flow designer.
-Given a user's goal, produce a FlowSpec describing the intended flow with candidate node names to search for."""
+Given a user's goal, produce a FlowBuildContext describing the intended flow with candidate node names to search for."""
 
 
-def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: AgentRequest) -> FlowSpec:
+def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: AgentRequest) -> FlowBuildContext:
     api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -24,9 +24,9 @@ def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: Agent
 
 Return JSON:
 {{
+  "name": "<kebab-case-flow-name>",
   "description": "<one sentence>",
-  "candidate_nodes": ["<node-name-1>", "<node-name-2>"],
-  "artifact_id": ""
+  "candidate_nodes": ["<node-name-1>", "<node-name-2>"]
 }}"""
         }]
     )
@@ -43,9 +43,11 @@ Return JSON:
 
     data = json.loads(content)
 
-    return FlowSpec(
+    # Store candidate_nodes in graph_json as a JSON object for NodeResolver to consume.
+    ctx = FlowBuildContext(
+        name=data.get("name", "new-flow"),
         description=data.get("description", input.goal),
-        candidate_nodes=data.get("candidate_nodes", []),
-        artifact_id=data.get("artifact_id", ""),
-        fix_instructions=input.goal,
+        graph_json=json.dumps({"candidate_nodes": data.get("candidate_nodes", [])}),
     )
+
+    return ctx

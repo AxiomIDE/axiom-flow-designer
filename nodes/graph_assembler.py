@@ -2,7 +2,7 @@ import json
 import os
 import anthropic
 
-from gen.axiom_official_axiom_agent_messages_messages_pb2 import FlowSpec
+from gen.axiom_official_axiom_agent_messages_messages_pb2 import FlowBuildContext
 from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
 
@@ -11,7 +11,7 @@ Given resolved nodes and a description, produce a valid React Flow graph JSON wi
 Edges must map output fields from one node to input fields of the next."""
 
 
-def graph_assembler(log: AxiomLogger, secrets: AxiomSecrets, input: FlowSpec) -> FlowSpec:
+def graph_assembler(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildContext) -> FlowBuildContext:
     api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -58,7 +58,7 @@ Return a React Flow graph JSON object with:
         graph = json.loads(content)
         input.graph_json = json.dumps(graph)
     except json.JSONDecodeError:
-        log.warning("LLM returned invalid JSON for graph; keeping existing graph_json")
+        log.warn("LLM returned invalid JSON for graph; keeping existing graph_json")
 
     input.fix_instructions = ""
     return input

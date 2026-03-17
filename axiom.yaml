@@ -6,49 +6,45 @@ author: Axiom Official
 license: MIT
 nodes:
     - name: FlowIntentClassifier
-      description: Parses the user's goal and produces a FlowSpec with an initial description and list of candidate node names to search for.
+      description: Parses the user's goal and produces a FlowBuildContext with an initial description and list of candidate node names to search for.
       input: AgentRequest
-      output: FlowSpec
+      output: FlowBuildContext
       required_secrets:
         - ANTHROPIC_API_KEY
     - name: NodeResolver
-      description: Searches the marketplace for each candidate node, resolves their ULIDs and proto schemas, and populates FlowSpec.graph_json with the resolved node information.
-      input: FlowSpec
-      output: FlowSpec
+      description: Searches the marketplace for each candidate node, resolves their ULIDs and proto schemas, and populates the context with resolved node information.
+      input: FlowBuildContext
+      output: FlowBuildContext
     - name: GraphAssembler
-      description: Uses the LLM to assemble the resolved nodes into a valid React Flow graph JSON (graph_json) with correct edge connections and edge plan adapters.
-      input: FlowSpec
-      output: FlowSpec
+      description: Uses the LLM to assemble resolved nodes into a valid React Flow graph JSON with correct edge connections and adapters. Uses fix_instructions on retry iterations.
+      input: FlowBuildContext
+      output: FlowBuildContext
       required_secrets:
         - ANTHROPIC_API_KEY
     - name: FlowCompiler
-      description: Calls POST /app/graphs/compile on the BFF to compile and store the flow, returning a CompileResult with the artifact_id.
-      input: FlowSpec
-      output: CompileResult
+      description: Calls POST /app/graphs/compile on the BFF and populates compile_success, artifact_id, and compile_error.
+      input: FlowBuildContext
+      output: FlowBuildContext
     - name: FlowTestInvoker
-      description: Invokes the compiled flow via POST /app/run with synthetic input and returns a TestResult with the execution_id for debug event inspection.
-      input: CompileResult
-      output: TestResult
+      description: Invokes the compiled flow via POST /app/run with synthetic input and populates test_success, test_error, execution_id, and session_id.
+      input: FlowBuildContext
+      output: FlowBuildContext
     - name: FlowErrorAnalyser
-      description: Reads debug events for the test execution, diagnoses graph topology or data mapping errors, and produces fix_instructions for GraphAssembler. Sets has_error=false when the test passes.
-      input: TestResult
-      output: AnalysisResult
+      description: Reads debug events for the test execution, diagnoses graph or adapter errors, and populates has_error, fix_instructions, and error_summary.
+      input: FlowBuildContext
+      output: FlowBuildContext
       required_secrets:
         - ANTHROPIC_API_KEY
     - name: FlowResult
-      description: Terminal node. Returns the artifact_id in AgentProgress.artifact_id on success.
-      input: AnalysisResult
+      description: Terminal node. Returns AgentProgress with artifact_id on success or error_summary on failure.
+      input: FlowBuildContext
       output: AgentProgress
 imports:
     - package: axiom-official/axiom-agent-messages
       version: 0.1.0
       messages:
         - AgentRequest
-        - PackageSpec
-        - FlowSpec
-        - CompileResult
-        - AnalysisResult
+        - FlowBuildContext
         - AgentProgress
         - NodeSpec
-        - PublishResult
-        - TestResult
+        - PackageBuildContext
