@@ -11,7 +11,7 @@ Given a user's goal, produce a FlowBuildContext describing the intended flow wit
 
 
 def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: AgentRequest) -> FlowBuildContext:
-    api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = secrets.get("ANTHROPIC_API_KEY")
     client = anthropic.Anthropic(api_key=api_key)
 
     message = client.messages.create(
@@ -20,7 +20,7 @@ def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: Agent
         system=SYSTEM_PROMPT,
         messages=[{
             "role": "user",
-            "content": f"""Design an Axiom flow for this goal: {input.goal}
+            "content": f"""Design an Axiom flow for this goal: {input.prompt}
 
 Return JSON:
 {{
@@ -46,7 +46,7 @@ Return JSON:
     # Store candidate_nodes in graph_json as a JSON object for NodeResolver to consume.
     ctx = FlowBuildContext(
         name=data.get("name", "new-flow"),
-        description=data.get("description", input.goal),
+        description=data.get("description", input.prompt),
         graph_json=json.dumps({"candidate_nodes": data.get("candidate_nodes", [])}),
     )
 

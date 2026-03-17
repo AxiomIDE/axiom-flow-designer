@@ -1,50 +1,55 @@
 name: axiom-official/axiom-flow-designer
 version: 0.1.0
 language: python
-description: Designs and compiles Axiom flow graphs from natural language goals. Searches the marketplace for existing nodes, assembles them into a graph, compiles it via the registry, tests it with a synthetic invocation, and self-corrects on failure.
+description: Designs and compiles Axiom flow graphs from natural language prompts. Searches the marketplace for existing nodes, assembles them into a graph, compiles it via the registry, tests it with a synthetic invocation, and self-corrects on failure.
 author: Axiom Official
 license: MIT
 nodes:
-    - name: FlowIntentClassifier
-      description: Parses the user's goal and produces a FlowBuildContext with an initial description and list of candidate node names to search for.
-      input: AgentRequest
-      output: FlowBuildContext
-      required_secrets:
-        - ANTHROPIC_API_KEY
-    - name: NodeResolver
-      description: Searches the marketplace for each candidate node, resolves their ULIDs and proto schemas, and populates the context with resolved node information.
-      input: FlowBuildContext
-      output: FlowBuildContext
-    - name: GraphAssembler
-      description: Uses the LLM to assemble resolved nodes into a valid React Flow graph JSON with correct edge connections and adapters. Uses fix_instructions on retry iterations.
-      input: FlowBuildContext
-      output: FlowBuildContext
-      required_secrets:
-        - ANTHROPIC_API_KEY
-    - name: FlowCompiler
-      description: Calls POST /app/graphs/compile on the BFF and populates compile_success, artifact_id, and compile_error.
-      input: FlowBuildContext
-      output: FlowBuildContext
-    - name: FlowTestInvoker
-      description: Invokes the compiled flow via POST /app/run with synthetic input and populates test_success, test_error, execution_id, and session_id.
-      input: FlowBuildContext
-      output: FlowBuildContext
-    - name: FlowErrorAnalyser
-      description: Reads debug events for the test execution, diagnoses graph or adapter errors, and populates has_error, fix_instructions, and error_summary.
-      input: FlowBuildContext
-      output: FlowBuildContext
-      required_secrets:
-        - ANTHROPIC_API_KEY
-    - name: FlowResult
-      description: Terminal node. Returns AgentProgress with artifact_id on success or error_summary on failure.
-      input: FlowBuildContext
-      output: AgentProgress
+  - name: FlowIntentClassifier
+    input: AgentRequest
+    output: FlowBuildContext
+    description: Parses the user's prompt and produces a FlowBuildContext with an initial description and list of candidate node names to search for.
+    required_secrets:
+      - ANTHROPIC_API_KEY
+  - name: NodeResolver
+    input: FlowBuildContext
+    output: FlowBuildContext
+    description: Searches the marketplace for each candidate node, resolves their ULIDs and proto schemas, and populates the context with resolved node information.
+    required_secrets:
+      - AXIOM_API_KEY
+  - name: GraphAssembler
+    input: FlowBuildContext
+    output: FlowBuildContext
+    description: Uses the LLM to assemble resolved nodes into a valid React Flow graph JSON with correct edge connections and adapters. Uses fix_instructions on retry iterations.
+    required_secrets:
+      - ANTHROPIC_API_KEY
+  - name: FlowCompiler
+    input: FlowBuildContext
+    output: FlowBuildContext
+    description: Calls POST /app/graphs/compile on the BFF and populates compile_success, artifact_id, and compile_error.
+    required_secrets:
+      - AXIOM_API_KEY
+  - name: FlowTestInvoker
+    input: FlowBuildContext
+    output: FlowBuildContext
+    description: Invokes the compiled flow via POST /app/run with synthetic input and populates test_success, test_error, execution_id, and session_id.
+    required_secrets:
+      - AXIOM_API_KEY
+  - name: FlowErrorAnalyser
+    input: FlowBuildContext
+    output: FlowBuildContext
+    description: Reads debug events for the test execution, diagnoses graph or adapter errors, and populates has_error, fix_instructions, and error_summary.
+    required_secrets:
+      - ANTHROPIC_API_KEY
+      - AXIOM_API_KEY
+  - name: FlowResult
+    input: FlowBuildContext
+    output: AgentProgress
+    description: Terminal node. Returns AgentProgress with artifact_id on success or error_summary on failure.
 imports:
-    - package: axiom-official/axiom-agent-messages
-      version: 0.1.0
-      messages:
-        - AgentRequest
-        - FlowBuildContext
-        - AgentProgress
-        - NodeSpec
-        - PackageBuildContext
+  - package: axiom-official/axiom-agent-messages
+    version: 0.1.0
+    messages:
+      - AgentRequest
+      - FlowBuildContext
+      - AgentProgress

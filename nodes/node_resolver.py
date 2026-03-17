@@ -11,7 +11,7 @@ def node_resolver(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildConte
     """Search the marketplace for each candidate node and resolve their ULIDs."""
 
     bff_url = os.environ.get("BFF_URL", "http://axiom-bff:8083")
-    axiom_api_key = os.environ.get("AXIOM_API_KEY", "")
+    axiom_api_key = secrets.get("AXIOM_API_KEY", "")
     headers = {"Authorization": f"Bearer {axiom_api_key}"}
 
     candidate_nodes = []

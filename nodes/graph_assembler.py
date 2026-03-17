@@ -12,7 +12,7 @@ Edges must map output fields from one node to input fields of the next."""
 
 
 def graph_assembler(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildContext) -> FlowBuildContext:
-    api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = secrets.get("ANTHROPIC_API_KEY")
     client = anthropic.Anthropic(api_key=api_key)
 
     fix_section = f"\n\nFix instructions:\n{input.fix_instructions}" if input.fix_instructions else ""

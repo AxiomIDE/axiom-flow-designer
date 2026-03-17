@@ -11,7 +11,7 @@ def flow_compiler(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildConte
     """Compile the flow graph via the BFF and populate compile_success/artifact_id."""
 
     bff_url = os.environ.get("BFF_URL", "http://axiom-bff:8083")
-    axiom_api_key = os.environ.get("AXIOM_API_KEY", "")
+    axiom_api_key = secrets.get("AXIOM_API_KEY", "")
 
     if not input.graph_json:
         input.compile_success = False
