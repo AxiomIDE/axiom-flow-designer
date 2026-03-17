@@ -16,7 +16,7 @@ def flow_test_invoker(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuildC
         return input
 
     bff_url = os.environ.get("BFF_URL", "http://axiom-bff:8083")
-    axiom_api_key = secrets.get("AXIOM_API_KEY", "")
+    axiom_api_key, _ = secrets.get("AXIOM_API_KEY")
     session_id = str(uuid.uuid4()).replace("-", "")
 
     try:
