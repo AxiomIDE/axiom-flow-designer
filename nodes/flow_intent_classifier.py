@@ -1,18 +1,17 @@
 import json
-import logging
 import os
 import anthropic
 
 from gen.axiom_official_axiom_agent_messages_messages_pb2 import AgentRequest, FlowSpec
+from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
-logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are an expert Axiom flow designer.
 Given a user's goal, produce a FlowSpec describing the intended flow with candidate node names to search for."""
 
 
-def handle(req: AgentRequest, context) -> FlowSpec:
-    api_key = context.secrets.get("ANTHROPIC_API_KEY") if hasattr(context, 'secrets') else os.environ.get("ANTHROPIC_API_KEY", "")
+def flow_intent_classifier(log: AxiomLogger, secrets: AxiomSecrets, input: AgentRequest) -> FlowSpec:
+    api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
     client = anthropic.Anthropic(api_key=api_key)
 
     message = client.messages.create(
@@ -21,7 +20,7 @@ def handle(req: AgentRequest, context) -> FlowSpec:
         system=SYSTEM_PROMPT,
         messages=[{
             "role": "user",
-            "content": f"""Design an Axiom flow for this goal: {req.goal}
+            "content": f"""Design an Axiom flow for this goal: {input.goal}
 
 Return JSON:
 {{
@@ -45,8 +44,8 @@ Return JSON:
     data = json.loads(content)
 
     return FlowSpec(
-        description=data.get("description", req.goal),
+        description=data.get("description", input.goal),
         candidate_nodes=data.get("candidate_nodes", []),
         artifact_id=data.get("artifact_id", ""),
-        fix_instructions=req.goal,
+        fix_instructions=input.goal,
     )

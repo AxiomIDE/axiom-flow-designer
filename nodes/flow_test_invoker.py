@@ -1,21 +1,20 @@
-import logging
 import os
 import uuid
 
 import httpx
 
 from gen.axiom_official_axiom_agent_messages_messages_pb2 import CompileResult, TestResult
+from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
-logger = logging.getLogger(__name__)
 
 
-def handle(result: CompileResult, context) -> TestResult:
+def flow_test_invoker(log: AxiomLogger, secrets: AxiomSecrets, input: CompileResult) -> TestResult:
     """Invoke the compiled flow with synthetic input."""
 
-    if not result.success:
+    if not input.success:
         return TestResult(
             success=False,
-            error=f"Cannot test: compile failed — {result.error}",
+            error=f"Cannot test: compile failed — {input.error}",
         )
 
     bff_url = os.environ.get("BFF_URL", "http://axiom-bff:8083")
@@ -26,7 +25,7 @@ def handle(result: CompileResult, context) -> TestResult:
         resp = httpx.post(
             f"{bff_url}/app/run",
             json={
-                "artifact_id": result.artifact_id,
+                "artifact_id": input.artifact_id,
                 "input": {},
             },
             headers={

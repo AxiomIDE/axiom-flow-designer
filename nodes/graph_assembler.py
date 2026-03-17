@@ -1,27 +1,26 @@
 import json
-import logging
 import os
 import anthropic
 
 from gen.axiom_official_axiom_agent_messages_messages_pb2 import FlowSpec
+from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
-logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are an expert Axiom flow graph assembler.
 Given resolved nodes and a description, produce a valid React Flow graph JSON with correct edge connections.
 Edges must map output fields from one node to input fields of the next."""
 
 
-def handle(spec: FlowSpec, context) -> FlowSpec:
-    api_key = context.secrets.get("ANTHROPIC_API_KEY") if hasattr(context, 'secrets') else os.environ.get("ANTHROPIC_API_KEY", "")
+def graph_assembler(log: AxiomLogger, secrets: AxiomSecrets, input: FlowSpec) -> FlowSpec:
+    api_key = secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY", "")
     client = anthropic.Anthropic(api_key=api_key)
 
-    fix_section = f"\n\nFix instructions:\n{spec.fix_instructions}" if spec.fix_instructions else ""
+    fix_section = f"\n\nFix instructions:\n{input.fix_instructions}" if input.fix_instructions else ""
 
     resolved = {}
-    if spec.graph_json:
+    if input.graph_json:
         try:
-            resolved = json.loads(spec.graph_json)
+            resolved = json.loads(input.graph_json)
         except json.JSONDecodeError:
             pass
 
@@ -31,7 +30,7 @@ def handle(spec: FlowSpec, context) -> FlowSpec:
         system=SYSTEM_PROMPT,
         messages=[{
             "role": "user",
-            "content": f"""Assemble a flow graph for: {spec.description}
+            "content": f"""Assemble a flow graph for: {input.description}
 
 Resolved nodes:
 {json.dumps(resolved.get("resolved_nodes", []), indent=2)}
@@ -57,9 +56,9 @@ Return a React Flow graph JSON object with:
 
     try:
         graph = json.loads(content)
-        spec.graph_json = json.dumps(graph)
+        input.graph_json = json.dumps(graph)
     except json.JSONDecodeError:
-        logger.warning("LLM returned invalid JSON for graph; keeping existing graph_json")
+        log.warning("LLM returned invalid JSON for graph; keeping existing graph_json")
 
-    spec.fix_instructions = ""
-    return spec
+    input.fix_instructions = ""
+    return input

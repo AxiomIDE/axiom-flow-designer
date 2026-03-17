@@ -1,15 +1,14 @@
 import json
-import logging
 import os
 
 import httpx
 
 from gen.axiom_official_axiom_agent_messages_messages_pb2 import FlowSpec
+from gen.axiom_logger import AxiomLogger, AxiomSecrets
 
-logger = logging.getLogger(__name__)
 
 
-def handle(spec: FlowSpec, context) -> FlowSpec:
+def node_resolver(log: AxiomLogger, secrets: AxiomSecrets, input: FlowSpec) -> FlowSpec:
     """Search the marketplace for each candidate node and resolve their ULIDs."""
 
     bff_url = os.environ.get("BFF_URL", "http://axiom-bff:8083")
@@ -17,7 +16,7 @@ def handle(spec: FlowSpec, context) -> FlowSpec:
     headers = {"Authorization": f"Bearer {axiom_api_key}"}
 
     resolved_nodes = []
-    for node_name in spec.candidate_nodes:
+    for node_name in input.candidate_nodes:
         try:
             resp = httpx.post(
                 f"{bff_url}/app/marketplace/search/semantic",
@@ -38,9 +37,9 @@ def handle(spec: FlowSpec, context) -> FlowSpec:
                             "output_schema": node.get("output_schema", {}),
                         })
         except Exception as e:
-            logger.warning(f"Failed to resolve node {node_name}: {e}")
+            log.warning(f"Failed to resolve node {node_name}: {e}")
 
     if resolved_nodes:
-        spec.graph_json = json.dumps({"resolved_nodes": resolved_nodes})
+        input.graph_json = json.dumps({"resolved_nodes": resolved_nodes})
 
-    return spec
+    return input
