@@ -22,7 +22,7 @@ def flow_error_analyser(log: AxiomLogger, secrets: AxiomSecrets, input: FlowBuil
     api_key, _ = secrets.get("ANTHROPIC_API_KEY")
     debug_events_text = ""
     if input.session_id:
-        ingress_url = os.environ.get("INGRESS_URL", "http://axiom-ingress:80")
+        ingress_url = os.environ.get("INGRESS_URL", "http://axiom-ingress.default.svc.cluster.local:80")
         axiom_api_key, _ = secrets.get("AXIOM_API_KEY")
         try:
             resp = httpx.get(
